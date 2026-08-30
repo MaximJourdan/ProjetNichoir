@@ -1,0 +1,27 @@
+sudo apt-get update
+sudo apt-get install mosquitto mosquitto-clients -y
+
+
+sudo nano /etc/mosquitto/conf.d/local.conf
+
+listener 1883
+allow_anonymous true
+message_size_limit 0    (save: ctrl+x y enter)
+
+
+sudo systemctl restart mosquitto
+systemctl status mosquitto
+
+mosquitto_sub -h localhost -t test - v mosquitto_sub -h localhost -t "#" - v
+mosquitto_pub -h localhost -t test -m "hello"
+
+
+/only to remove completely
+sudo systemctl stop mosquito
+
+sudo apt-get purge mosquitto mosquitto-clients|
+sudo apt-get autoremove - y
+
+sudo rm - rf /etc/mosquitto
+sudo rm -rf /var/lib/mosquitto
+sudo rm -rf /var/log/mosquitto

@@ -1,0 +1,14 @@
+Temp/humi bme280 du grove kit est enft un DHT20 donc lib adafruit ahtx0
+
+Le timercam nécessite une batterie connectée au SH1.0-2P battery port afin d'utiliser le deepsleep PMU
+CR1220 RTC battery ou alors une lipo 3.7? Adafruit 500mah lipo (3.7v)
+
+Pour ajouter le powerlevel à l'étape 6, j'ai du reculer timercambegin et define 
+#define sensor_t cam_sensor_t    //clash
+ donc le vrai fix est 
+#include "M5TimerCAM.h"       // loads esp_camera + its own sensor_t first
+#include <Adafruit_Sensor.h>  // now sees a different include scope
+
+toujours clash entre m5cam et aht20
+
+mqtt photo upload packet size 256 to 150000

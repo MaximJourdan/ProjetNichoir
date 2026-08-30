@@ -1,0 +1,129 @@
+CREATE TABLE captures (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    image_path VARCHAR(255),          -- ou BLOB si tu stockes directement l'image
+    battery_level FLOAT,              -- niveau de batterie (en %)
+    motion_detected BOOLEAN,          -- vrai si détection PIR
+    device_id VARCHAR(50)             -- si plusieurs nichoirs
+);
+
+🟦 1) Les lignes de code utilisées pour la base de données (MariaDB)
+Voici les blocs essentiels que j'ai utilisé dans app_unified.py :
+
+✔ Connexion à la base de données
+db_conn = mariadb.connect(**DB_CONFIG)
+
+
+Avec la configuration :
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'nichoir_user',
+    'password': 'modeste123',
+    'database': 'nichoir_db'
+}
+
+
+
+✔ Fonction d’initialisation
+def init_database():
+    global db_conn
+    try:
+        db_conn = mariadb.connect(**DB_CONFIG)
+        print("✅ Connecté à MariaDB")
+        return True
+    except mariadb.Error as e:
+        print(f"❌ Erreur MariaDB: {e}")
+        return False
+
+
+
+✔ Connexion utilisée par Flask
+def get_db_connection():
+    try:
+        return mariadb.connect(**DB_CONFIG)
+    except mariadb.Error as e:
+        print(f"❌ Erreur BD Flask: {e}")
+        return None
+
+
+
+✔ Insertion d’une capture dans la base
+query = """
+    INSERT INTO captures
+    (timestamp, image_path, battery_level, motion_detected, device_id)
+    VALUES (?, ?, ?, ?, ?)
+"""
+
+cursor.execute(query, (
+    timestamp,
+    relative_path,
+    metadata.get('battery', 0),
+    0,
+    DEVICE_ID
+))
+db_conn.commit()
+
+
+
+🟦 2) Les lignes de code utilisées pour lancer le serveur MQTT sur le Raspberry Pi
+Raspberry Pi joue le rôle de listener MQTT, pas de broker.
+Le broker est Mosquitto, installé sur le Pi.
+Dans le code Python, tu lances le client MQTT avec :
+
+✔ Création du client MQTT
+mqtt_client = mqtt.Client(client_id="RPi_Listener")
+mqtt_client.on_connect = mqtt_on_connect
+mqtt_client.on_message = mqtt_on_message
+
+
+
+✔ Connexion au broker
+mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+
+
+Avec ta config :
+MQTT_BROKER = "192.168.2.45"
+MQTT_PORT = 1883
+
+
+
+✔ Boucle d’écoute MQTT
+mqtt_client.loop_forever()
+
+
+
+✔ Lancement du listener dans un thread séparé
+mqtt_thread = threading.Thread(target=start_mqtt_listener, daemon=True)
+mqtt_thread.start()
+
+
+
+✔ Callback de connexion
+def mqtt_on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("✅ Connecté au broker MQTT")
+        client.subscribe(MQTT_TOPIC_IMAGE)
+        client.subscribe(MQTT_TOPIC_METADATA)
+
+
+
+✔ Callback de réception des messages
+def mqtt_on_message(client, userdata, msg):
+    if msg.topic == MQTT_TOPIC_METADATA:
+        ...
+    elif msg.topic == MQTT_TOPIC_IMAGE:
+        image_buffer.extend(msg.payload)
+
+
+
+🟦 Résumé 
+Base de données
+- Connexion via mariadb.connect()
+- Insertion des captures avec un INSERT INTO
+- Connexion dédiée pour Flask (get_db_connection())
+MQTT
+- Client MQTT créé avec mqtt.Client()
+- Connexion au broker Mosquitto du Pi
+- Souscription aux topics nichoir/camera/image et metadata
+- Listener lancé dans un thread séparé
+- Reconstruction des images via un buffer

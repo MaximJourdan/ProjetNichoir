@@ -1,0 +1,562 @@
+<!-- modeste@Modestelandry:~/nichoir_projet/web/templates $ ls
+index.html
+modeste@Modestelandry:~/nichoir_projet/web/templates $ cat index.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nichoir Connecté - Galerie</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        /* Header élégant */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: cover;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .logo i {
+            font-size: 3rem;
+            background: white;
+            color: #667eea;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin: 2rem auto;
+            max-width: 800px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            min-width: 180px;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Container principal */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Galerie */
+        .gallery-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .gallery-header h2 {
+            font-size: 2rem;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .gallery-header h2 i {
+            color: var(--primary);
+        }
+
+        /* Grid des images */
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        /* Carte image */
+        .image-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .image-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            z-index: 1;
+        }
+
+        .image-container {
+            height: 250px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .image-card:hover .image-container img {
+            transform: scale(1.1);
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.7));
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .image-card:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .image-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Info sous l'image */
+        .image-info {
+            padding: 1.5rem;
+        }
+
+        .image-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .image-id {
+            background: #f0f4ff;
+            color: var(--primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .image-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .date-time {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .battery-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .battery-high {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        .battery-medium {
+            background: rgba(255, 152, 0, 0.1);
+            color: #FF9800;
+        }
+
+        .battery-low {
+            background: rgba(244, 67, 54, 0.1);
+            color: #F44336;
+        }
+
+        /* Message si vide */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .empty-state i {
+            font-size: 5rem;
+            color: #e0e0e0;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--gray);
+            background: white;
+            margin-top: 4rem;
+            border-top: 1px solid #eee;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .stats {
+                gap: 1rem;
+            }
+
+            .stat-card {
+                min-width: 140px;
+                padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+
+            .images-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-dove"></i>
+            </div>
+            <h1>Nichoir Connecté</h1>
+            <p class="subtitle">Surveillance automatique de l'activité aviaire en temps réel</p>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ total }}</div>
+                    <div class="stat-label">Total Captures</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ avg_battery }}%</div>
+                    <div class="stat-label">Batterie Moyenne</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">
+                        <i class="fas fa-wifi" style="color: #4CAF50;"></i>
+                    </div>
+                    <div class="stat-label">En Ligne</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <div class="container">
+        <div class="gallery-header">
+            <h2><i class="fas fa-camera"></i> Galerie des Captures</h2>
+            <p style="color: var(--gray); max-width: 600px; margin: 0 auto;">
+                Images capturées automatiquement par le système ESP32 TimerCAM.
+                Chaque capture inclut le niveau de batterie et l'horodatage.
+            </p>
+        </div>
+
+        <!-- Grille d'images -->
+        <div class="images-grid">
+            {% if captures %}
+                {% for capture in captures %}
+                <div class="image-card">
+                    <div class="image-container">
+                        {% if capture.web_url %}
+                        <img src="{{ capture.web_url }}"
+                             alt="Capture #{{ capture.id }}"
+                             loading="lazy">
+                        {% else %}
+                        <div style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                  display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-image" style="font-size: 3rem; color: white; opacity: 0.5;"></i>
+                        </div>
+                        {% endif %}
+                        <div class="image-overlay">
+                            <span class="image-badge">
+                                <i class="fas fa-microchip"></i> {{ capture.device_id }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="image-info">
+                        <div class="image-title">
+                            <span>Capture Nichoir</span>
+                            <span class="image-id">#{{ capture.id }}</span>
+                        </div>
+
+                        <div class="image-meta">
+                            <div class="date-time">
+                                <i class="far fa-clock"></i>
+                                <span>{{ capture.date_full }}</span>
+                            </div>
+
+                            <div class="battery-indicator
+                                {% if capture.battery_level > 70 %}battery-high
+                                {% elif capture.battery_level > 30 %}battery-medium
+                                {% else %}battery-low{% endif %}">
+                                <i class="fas fa-battery-full"></i>
+                                <span>{{ capture.battery_level|round|int }}%</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 0.8rem; font-size: 0.85rem; color: #888;">
+                            <i class="far fa-clock"></i> {{ capture.time_ago }}
+                            {% if capture.motion_detected %}
+                            <span style="margin-left: 1rem; color: #f72585;">
+                                <i class="fas fa-running"></i> Mouvement détecté
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-camera-slash"></i>
+                    <h3>Aucune capture disponible</h3>
+                    <p style="color: var(--gray); margin-bottom: 2rem;">
+                        Le système n'a pas encore capturé d'images.<br>
+                        Vérifiez la connexion de l'ESP32 TimerCAM.
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: #f0f4ff; border-radius: 50%;
+                                      display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">
+                                <i class="fas fa-wifi" style="color: #667eea; font-size: 1.5rem;"></i>
+                            </div>
+                            <small>WiFi ESP32</small>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: #f0f4ff; border-radius: 50%;
+                                      display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">
+                                <i class="fas fa-server" style="color: #667eea; font-size: 1.5rem;"></i>
+                            </div>
+                            <small>MQTT Broker</small>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: #f0f4ff; border-radius: 50%;
+                                      display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">
+                                <i class="fas fa-camera" style="color: #667eea; font-size: 1.5rem;"></i>
+                            </div>
+                            <small>Caméra</small>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-logo">
+            <i class="fas fa-dove"></i>
+            <span>Nichoir Connecté</span>
+        </div>
+        <p>Projet académique - HEPL Liège | SmartCities 2025-2026</p>
+        <p style="font-size: 0.9rem; margin-top: 1rem; color: #999;">
+            Système de surveillance aviaire intelligent avec ESP32 TimerCAM et Raspberry Pi
+        </p>
+        <p style="font-size: 0.8rem; margin-top: 1rem; color: #bbb;">
+            Dernière mise à jour: {{ now.strftime('%d/%m/%Y %H:%M') if now else '' }}
+            | Adresse: 192.168.2.45:5000
+        </p>
+    </footer>
+
+    <script>
+        // Animation simple au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            // Faire apparaître les cartes avec un délai
+            const cards = document.querySelectorAll('.image-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s, transform 0.5s';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Rafraîchissement automatique toutes les 2 minutes
+            setInterval(() => {
+                // Juste recharger la page (simple)
+                // Tu pourras ajouter une API plus tard
+                location.reload();
+            }, 120000); // 2 minutes
+
+            // Ajouter l'heure actuelle dans le footer
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+            const dateStr = now.toLocaleDateString('fr-FR');
+
+            const timeElement = document.createElement('span');
+            timeElement.textContent = ` | Heure serveur: ${timeStr}`;
+            timeElement.style.fontSize = '0.8rem';
+            timeElement.style.color = '#bbb';
+
+            const footer = document.querySelector('footer p:last-child');
+            if (footer) {
+                footer.appendChild(timeElement);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+Voici un résumé clair, structuré de ma partie sur :
+- la partie Flask du fichier app_unified.py
+- la partie interface web avec index.html
+
+🟦 Résumé – Partie Flask (app_unified.py)
+La partie Flask de l'application joue le rôle de serveur web et d’interface entre la base de données et l’utilisateur. Elle est intégrée dans le script unifié qui combine :
+- un listener MQTT (thread séparé)
+- une API Flask
+- un serveur web affichant les images du nichoir
+🎯 Objectif de la partie Flask
+Fournir une interface web moderne permettant :
+- d’afficher les images capturées par l’ESP32 TimerCAM
+- de consulter les métadonnées (batterie, date, mouvement)
+- d’exposer des API REST pour d’autres services
+🧱 Structure principale
+La partie Flask contient :
+✔ 1. Initialisation
+- Création de l’application Flask
+- Définition du dossier static/ pour les images
+- Connexion à MariaDB via une fonction dédiée
+✔ 2. Routes Web
+/ – Page principale
+- Récupère toutes les captures(path) dans la base de données
+- Formate les dates et ajoute un champ “il y a X temps”
+- Génère les URLs des images pour l’affichage
+- Calcule des statistiques simples :
+- nombre total de captures
+- batterie moyenne
+Cette route renvoie le template index.html.
+/api/health
+- Indique l’état du système :
+- statut du MQTT
+- statut de la base de données
+- chemin des images
+/api/captures
+- Renvoie les 50 dernières captures en JSON
+- Inclut :
+- URL web
+- date formatée
+- “time_ago”
+/api/stats
+- Renvoie des statistiques globales :
+- total d’images
+- batterie moyenne
+- dernière capture
+- captures des dernières 24h
+✔ 3. Gestion du temps
+Fonction get_time_ago() qui convertit un timestamp en texte humain :
+- “il y a X minutes”
+- “il y a X heures”
+- “il y a X jours”
+✔ 4. Architecture
+- Le listener MQTT tourne dans un thread séparé
+- Flask tourne en parallèle sur le port 5000
+- Les deux partagent la même base de données
+👉 Conclusion :
+La partie Flask transforme le Raspberry Pi en serveur web complet, capable d’afficher, d’analyser et d’exposer les données du nichoir.
+
+🟩 Résumé – Partie HTML (index.html)
+Ton fichier index.html constitue l’interface utilisateur du projet.
+Il est moderne, responsive et très bien structuré.
+🎨 Objectif
+Afficher une galerie d’images capturées automatiquement par l’ESP32 TimerCAM, avec leurs métadonnées.
+🧱 Structure du template
+✔ 1. En-tête (Header)
+- Titre du projet
+- Sous-titre explicatif
+- Icône (FontAwesome)
+- Trois cartes statistiques :
+- total des captures
+- batterie moyenne
+- statut du système
+✔ 2. Galerie d’images
+Pour chaque capture :
+- vignette de l’image
+- badge avec le device_id
+- date complète
+- niveau de batterie (couleur selon le pourcentage)
+- indication “il y a X temps”
+- icône “mouvement détecté” si applicable
+✔ 3. Gestion des cas sans images
+Une section “empty state” élégante :
+- icône caméra barrée
+- message explicatif
+- trois icônes (WiFi, MQTT, caméra) pour guider le diagnostic
+✔ 4. Footer
+- rappel du projet HEPL
+- description du système
+- date de mise à jour
+- adresse du serveur
+✔ 5. JavaScript intégré
+- animation d’apparition des cartes
+- rafraîchissement automatique toutes les 2 minutes
+- ajout dynamique de l’heure serveur
+✔ 6. Style général
+- utilisation de Google Fonts (Poppins)
+- icônes FontAwesome
+- design moderne, couleurs douces, cartes arrondies
+👉 Conclusion :
+index.html offre une interface professionnelle, claire et agréable, parfaitement adaptée au projet SmartCities
