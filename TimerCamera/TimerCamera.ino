@@ -316,6 +316,22 @@ int getBatteryLevel() {
 void goToSleep() {
     Serial.println("ESP32 → Deep Sleep");
 
+    // Déconnexion MQTT
+    if (mqttClient.connected()) {
+        Serial.println("🔌 Déconnexion MQTT...");
+        mqttClient.disconnect();
+    }
+
+    // Déconnexion WiFi
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("📡 Déconnexion WiFi...");
+        WiFi.disconnect(false, false);
+    }
+
+    // Désactivation complète du WiFi
+    WiFi.mode(WIFI_OFF);
+    Serial.println("📡 WiFi OFF");
+
     // Réveil PIR (GPIO4 compatible RTC)
     esp_sleep_enable_ext0_wakeup((gpio_num_t)BOARD_PIRPIN, 1);
 
