@@ -332,6 +332,11 @@ void goToSleep() {
     WiFi.mode(WIFI_OFF);
     Serial.println("📡 WiFi OFF");
 
+    //Désinitialisation caméra
+    Serial.println("📷 Désactivation caméra...");
+    esp_camera_deinit();
+    Serial.println("📷 Caméra OFF");
+
     // Réveil PIR (GPIO4 compatible RTC)
     esp_sleep_enable_ext0_wakeup((gpio_num_t)BOARD_PIRPIN, 1);
 
