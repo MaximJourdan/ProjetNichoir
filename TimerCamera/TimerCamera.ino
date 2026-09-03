@@ -44,8 +44,6 @@ const char* mqtt_client_id = "M5TimerCAM";
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-int photoCounter = 0;
-unsigned long lastPhotoTime = 0;
 const unsigned long PHOTO_INTERVAL = 60000; // 1 minute
 const int BOARD_PIRPIN = 4;  //SDA/gpio4
 const int BOARD_LEDPIN = 13; //SCL/gpio13
@@ -248,7 +246,7 @@ bool captureAndSendPhoto() {
 
   // Envoi des métadonnées
   String metadata = "{";
-  metadata += "\"photo_id\":" + String(photoCounter) + ",";
+  metadata += "\"photo_id\":"  + ",";   //+ String(photoCounter)
   metadata += "\"timestamp\":" + String(millis()) + ",";
   metadata += "\"size\":" + String(fb->len) + ",";
   metadata += "\"battery\":" + String(getBatteryLevel()) + ",";
