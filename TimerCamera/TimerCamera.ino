@@ -305,8 +305,8 @@ int getBatteryLevel() {
 
     String volt = String(TimerCAM.Power.getBatteryVoltage());
     String levl = String(TimerCAM.Power.getBatteryLevel());
-    mqttClient.publish("Volt", volt.c_str());
-    mqttClient.publish("Levl", levl.c_str());
+    //mqttClient.publish("Volt", volt.c_str());
+    //mqttClient.publish("Levl", levl.c_str());
     
     return TimerCAM.Power.getBatteryLevel(); //int envoyé vers mqtt
 }
