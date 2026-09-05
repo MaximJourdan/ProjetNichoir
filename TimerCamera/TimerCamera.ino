@@ -44,11 +44,14 @@ const char* mqtt_client_id = "M5TimerCAM";
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-const unsigned long PHOTO_INTERVAL = 60000; // 1 minute
+const uint64_t SLEEP_INTERVAL_SECONDS = 60;// 1 minute
 const int BOARD_PIRPIN = 4;  //SDA/gpio4
 const int BOARD_LEDPIN = 13; //SCL/gpio13
 
+RTC_DATA_ATTR uint32_t photoCounter = 0;
+
 esp_sleep_wakeup_cause_t wakeup_reason;
+String source;
 
 
 void setup() {
@@ -59,10 +62,13 @@ void setup() {
 
     Serial.print("Wakeup reason: ");
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
+        source = "PIR";
         Serial.println("PIR");
     } else if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) {
+        source = "TIMER";
         Serial.println("TIMER");
     } else {
+        source = "STARTUP";
         Serial.println("POWER ON / RESET");
     }
     Serial.println("\n--- Démarrage M5Stack TimerCAM (MQTT) ---");
@@ -102,10 +108,10 @@ void setup() {
     config.pixel_format = PIXFORMAT_JPEG;
 
     if(psramFound()){
-        config.frame_size = FRAMESIZE_SVGA; // 800x600
-        config.jpeg_quality = 12;
-        config.fb_count = 2;
-        Serial.println("PSRAM détectée - Haute qualité");
+        config.frame_size = FRAMESIZE_VGA; // 640x480
+        config.jpeg_quality = 15;
+        config.fb_count = 1;
+        Serial.println("PSRAM détectée - Standard qualité");
     } else {
         config.frame_size = FRAMESIZE_VGA; // 640x480
         config.jpeg_quality = 15;
@@ -122,7 +128,14 @@ void setup() {
     Serial.println("✅ Caméra initialisée");
 
     //Connexion WiFi
-    connectWiFi();
+    if (wakeup_reason == ESP_SLEEP_WAKEUP_UNDEFINED) {
+      connectWiFi();       // WiFiManager
+    } else {
+        if (!beginWiFi()) {  // reconnexion normale
+        Serial.println("❌ WiFi indisponible");
+        goToSleep();
+      }         
+    }
 
     // INITIALISATION TIMER CAM (OBLIGATOIRE)
     TimerCAM.begin();
@@ -134,7 +147,10 @@ void setup() {
     mqttClient.setBufferSize(40000); // Augmenter la taille du buffer pour les images
 
     // Connexion MQTT
-    connectMQTT();
+    if (!connectMQTT()) {
+      Serial.println("❌ MQTT indisponible");
+      goToSleep();
+    }
 
     Serial.println("--- Système prêt - Capture automatique toutes les minutes ---");
 
@@ -202,33 +218,83 @@ void connectWiFi() {
 }
 
 
-void connectMQTT() {
-  while (!mqttClient.connected()) {
-    Serial.print("Connexion MQTT...");
-    
-    if (mqttClient.connect(mqtt_client_id)) {
-      Serial.println("✅ MQTT connecté");
-    } else {
-      Serial.print("❌ Échec, code erreur: ");
-      Serial.print(mqttClient.state());
-      Serial.println(" - Nouvelle tentative dans 5s");
-      delay(5000);
+bool beginWiFi() {
+    Serial.println("📡 Connexion au WiFi...");
+
+    WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(false);
+
+    // Utilise le SSID et le mot de passe sauvegardés
+    // par WiFiManager dans la mémoire de l'ESP32
+    WiFi.begin();
+
+    unsigned long startAttempt = millis();
+
+    while (WiFi.status() != WL_CONNECTED &&
+           millis() - startAttempt < 10000) {
+        delay(100);
+        Serial.print(".");
     }
-  }
+
+    Serial.println();
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("✅ WiFi connecté");
+        Serial.print("Adresse IP: ");
+        Serial.println(WiFi.localIP());
+        return true;
+    } else {
+        Serial.println("❌ Échec connexion WiFi");
+        return false;
+    }
+}
+
+
+bool connectMQTT() {
+    const int MAX_MQTT_ATTEMPTS = 3;
+
+    for (int attempt = 1; attempt <= MAX_MQTT_ATTEMPTS; attempt++) {
+
+        Serial.printf("Connexion MQTT... tentative %d/%d\n",
+                      attempt, MAX_MQTT_ATTEMPTS);
+
+        if (mqttClient.connect(mqtt_client_id)) {
+            Serial.println("✅ MQTT connecté");
+            return true;
+        }
+
+        Serial.print("❌ Échec MQTT, code erreur: ");
+        Serial.println(mqttClient.state());
+
+        if (attempt < MAX_MQTT_ATTEMPTS) {
+            Serial.println("Nouvelle tentative dans 2s...");
+            delay(2000);
+        }
+    }
+
+    Serial.println("❌ Impossible de se connecter au MQTT");
+    return false;
 }
 
 bool captureAndSendPhoto() {
   // Vérification WiFi
-  if(WiFi.status() != WL_CONNECTED) {
+  if (WiFi.status() != WL_CONNECTED) {
     Serial.println("❌ WiFi déconnecté");
-    connectWiFi();
-    return false;
+    
+    if (!beginWiFi()) {
+      Serial.println("❌ Impossible de reconnecter le WiFi");
+      return false;
+    }
   }
 
   // Vérification MQTT
-  if(!mqttClient.connected()) {
-    connectMQTT();
-    return false;
+  if (!mqttClient.connected()) {
+    Serial.println("❌ MQTT déconnecté");
+    
+    if (!connectMQTT()) {
+      Serial.println("❌ Impossible de reconnecter MQTT");
+      return false;
+    }
   }
 
   // Allumer la LED
@@ -246,13 +312,15 @@ bool captureAndSendPhoto() {
 
   // Envoi des métadonnées
   String metadata = "{";
-  metadata += "\"photo_id\":"  + ",";   //+ String(photoCounter)
+  metadata += "\"photo_id\":" + String(photoCounter) + ",";   
   metadata += "\"timestamp\":" + String(millis()) + ",";
   metadata += "\"size\":" + String(fb->len) + ",";
   metadata += "\"battery\":" + String(getBatteryLevel()) + ",";
-  metadata += "\"source\":\"AUTO\"";
+  metadata += "\"source\":\"" + source + "\"";
   metadata += "}";
   
+  photoCounter++;
+
   mqttClient.publish(mqtt_topic_metadata, metadata.c_str());
   Serial.println("📤 Métadonnées envoyées");
 
@@ -339,7 +407,7 @@ void goToSleep() {
     esp_sleep_enable_ext0_wakeup((gpio_num_t)BOARD_PIRPIN, 1);
 
     // Réveil timer 1 minute
-    esp_sleep_enable_timer_wakeup(60ULL * 1000000ULL);
+    esp_sleep_enable_timer_wakeup(SLEEP_INTERVAL_SECONDS *1000000ULL);
 
     delay(200);
     esp_deep_sleep_start();
