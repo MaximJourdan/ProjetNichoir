@@ -44,7 +44,7 @@ const char* mqtt_client_id = "M5TimerCAM";
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-const uint64_t SLEEP_INTERVAL_SECONDS = 60;// 1 minute
+const uint64_t SLEEP_INTERVAL_SECONDS = 3600;// 1 heure
 const int BOARD_PIRPIN = 4;  //SDA/gpio4
 const int BOARD_LEDPIN = 13; //SCL/gpio13
 
@@ -122,17 +122,17 @@ void setup() {
     // Initialisation de la caméra
     esp_err_t err = esp_camera_init(&config);
     if (err != ESP_OK) {
-        Serial.printf("❌ Erreur caméra: 0x%x\n", err);
+        Serial.printf(" Erreur caméra: 0x%x\n", err);
         ESP.restart();
     }
-    Serial.println("✅ Caméra initialisée");
+    Serial.println(" Caméra initialisée");
 
     //Connexion WiFi
     if (wakeup_reason == ESP_SLEEP_WAKEUP_UNDEFINED) {
       connectWiFi();       // WiFiManager
     } else {
         if (!beginWiFi()) {  // reconnexion normale
-        Serial.println("❌ WiFi indisponible");
+        Serial.println(" WiFi indisponible");
         goToSleep();
       }         
     }
@@ -140,7 +140,7 @@ void setup() {
     // INITIALISATION TIMER CAM (OBLIGATOIRE)
     TimerCAM.begin();
     Serial.println("TimerCAM initialisé");
-    getBatteryLevel();
+    //getBatteryLevel();
 
     // Configuration MQTT
     mqttClient.setServer(mqtt_server, mqtt_port);
@@ -148,7 +148,7 @@ void setup() {
 
     // Connexion MQTT
     if (!connectMQTT()) {
-      Serial.println("❌ MQTT indisponible");
+      Serial.println(" MQTT indisponible");
       goToSleep();
     }
 
@@ -239,12 +239,12 @@ bool beginWiFi() {
     Serial.println();
 
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("✅ WiFi connecté");
+        Serial.println(" WiFi connecté");
         Serial.print("Adresse IP: ");
         Serial.println(WiFi.localIP());
         return true;
     } else {
-        Serial.println("❌ Échec connexion WiFi");
+        Serial.println(" Échec connexion WiFi");
         return false;
     }
 }
@@ -259,11 +259,11 @@ bool connectMQTT() {
                       attempt, MAX_MQTT_ATTEMPTS);
 
         if (mqttClient.connect(mqtt_client_id)) {
-            Serial.println("✅ MQTT connecté");
+            Serial.println(" MQTT connecté");
             return true;
         }
 
-        Serial.print("❌ Échec MQTT, code erreur: ");
+        Serial.print(" Échec MQTT, code erreur: ");
         Serial.println(mqttClient.state());
 
         if (attempt < MAX_MQTT_ATTEMPTS) {
@@ -272,27 +272,27 @@ bool connectMQTT() {
         }
     }
 
-    Serial.println("❌ Impossible de se connecter au MQTT");
+    Serial.println(" Impossible de se connecter au MQTT");
     return false;
 }
 
 bool captureAndSendPhoto() {
   // Vérification WiFi
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("❌ WiFi déconnecté");
+    Serial.println(" WiFi déconnecté");
     
     if (!beginWiFi()) {
-      Serial.println("❌ Impossible de reconnecter le WiFi");
+      Serial.println(" Impossible de reconnecter le WiFi");
       return false;
     }
   }
 
   // Vérification MQTT
   if (!mqttClient.connected()) {
-    Serial.println("❌ MQTT déconnecté");
+    Serial.println(" MQTT déconnecté");
     
     if (!connectMQTT()) {
-      Serial.println("❌ Impossible de reconnecter MQTT");
+      Serial.println(" Impossible de reconnecter MQTT");
       return false;
     }
   }
@@ -303,12 +303,12 @@ bool captureAndSendPhoto() {
   // Capture de l'image
   camera_fb_t * fb = esp_camera_fb_get();
   if(!fb) {
-    Serial.println("❌ Échec capture caméra");
+    Serial.println(" Échec capture caméra");
     digitalWrite(2, LOW);
     return false;
   }
 
-  Serial.printf("📸 Image capturée: %d octets\n", fb->len);
+  Serial.printf(" Image capturée: %d octets\n", fb->len);
 
   // Envoi des métadonnées
   String metadata = "{";
@@ -322,7 +322,7 @@ bool captureAndSendPhoto() {
   photoCounter++;
 
   mqttClient.publish(mqtt_topic_metadata, metadata.c_str());
-  Serial.println("📤 Métadonnées envoyées");
+  Serial.println(" Métadonnées envoyées");
 
   // Envoi de l'image en plusieurs morceaux si nécessaire
   bool success = sendImageMQTT(fb);
@@ -338,7 +338,7 @@ bool sendImageMQTT(camera_fb_t * fb) {
   const int CHUNK_SIZE = 8192; // 8KB par paquet
   int totalChunks = (fb->len + CHUNK_SIZE - 1) / CHUNK_SIZE;
   
-  Serial.printf("📤 Envoi de l'image en %d morceaux...\n", totalChunks);
+  Serial.printf(" Envoi de l'image en %d morceaux...\n", totalChunks);
 
   for(int i = 0; i < totalChunks; i++) {
     int start = i * CHUNK_SIZE;
@@ -352,7 +352,7 @@ bool sendImageMQTT(camera_fb_t * fb) {
                                         false);
     
     if(!published) {
-      Serial.printf("❌ Échec envoi morceau %d/%d\n", i+1, totalChunks);
+      Serial.printf(" Échec envoi morceau %d/%d\n", i+1, totalChunks);
       return false;
     }
     
@@ -362,7 +362,7 @@ bool sendImageMQTT(camera_fb_t * fb) {
   
   // Signal de fin d'image
   mqttClient.publish(mqtt_topic_metadata, "{\"status\":\"complete\"}");
-  Serial.println("✅ Image complète envoyée");
+  Serial.println(" Image complète envoyée");
   
   return true;
 }
@@ -371,8 +371,8 @@ int getBatteryLevel() {
     Serial.printf("Bat Voltage: %dmv\r\n", TimerCAM.Power.getBatteryVoltage());
     Serial.printf("Bat Level: %d%%\r\n", TimerCAM.Power.getBatteryLevel());
 
-    String volt = String(TimerCAM.Power.getBatteryVoltage());
-    String levl = String(TimerCAM.Power.getBatteryLevel());
+    //String volt = String(TimerCAM.Power.getBatteryVoltage());
+    //String levl = String(TimerCAM.Power.getBatteryLevel());
     //mqttClient.publish("Volt", volt.c_str());
     //mqttClient.publish("Levl", levl.c_str());
     
@@ -384,24 +384,24 @@ void goToSleep() {
 
     // Déconnexion MQTT
     if (mqttClient.connected()) {
-        Serial.println("🔌 Déconnexion MQTT...");
+        Serial.println(" Déconnexion MQTT...");
         mqttClient.disconnect();
     }
 
     // Déconnexion WiFi
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("📡 Déconnexion WiFi...");
+        Serial.println(" Déconnexion WiFi...");
         WiFi.disconnect(false, false);
     }
 
     // Désactivation complète du WiFi
     WiFi.mode(WIFI_OFF);
-    Serial.println("📡 WiFi OFF");
+    Serial.println(" WiFi OFF");
 
     //Désinitialisation caméra
-    Serial.println("📷 Désactivation caméra...");
+    Serial.println(" Désactivation caméra...");
     esp_camera_deinit();
-    Serial.println("📷 Caméra OFF");
+    Serial.println(" Caméra OFF");
 
     // Réveil PIR (GPIO4 compatible RTC)
     esp_sleep_enable_ext0_wakeup((gpio_num_t)BOARD_PIRPIN, 1);

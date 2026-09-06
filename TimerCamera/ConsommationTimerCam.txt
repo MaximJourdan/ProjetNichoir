@@ -1,0 +1,73 @@
+### Estimation de la consommation énergétique
+
+Le système est constitué principalement de la TimerCAM M5Stack U082 et d'un capteur de présence PIR BS612. L'objectif de l'architecture est de maintenir la consommation au minimum pendant les périodes d'inactivité et de ne réveiller la caméra qu'en cas de détection ou à intervalles réguliers.
+
+La TimerCAM U082 possède un mode basse consommation avec un courant de sommeil annoncé pouvant descendre jusqu'à 2 µA. Le capteur PIR BS612 présente quant à lui une consommation typique d'environ 9,5 µA sous une alimentation de 3 V.
+
+Ainsi, lorsque le système est en Deep Sleep :
+
+* TimerCAM : ≈ 2 µA
+* PIR BS612 : ≈ 9,5 µA
+* Consommation totale théorique : ≈ 11,5 µA
+
+Cette consommation correspond à seulement :
+
+**0,0115 mA × 24 h = 0,276 mAh/jour**
+
+La consommation en veille est donc très faible. La majeure partie de l'énergie est consommée lors des phases de réveil, principalement à cause de l'activation du Wi-Fi, de la caméra et de la transmission MQTT.
+
+Pour effectuer une estimation du système complet, on considère une consommation moyenne de 150 mA pendant environ 10 secondes pour chaque cycle actif de capture et de transmission. Cette valeur constitue une hypothèse de dimensionnement et devra idéalement être vérifiée expérimentalement sur le prototype.
+
+L'énergie consommée par un cycle actif est alors :
+
+**150 mA × (10 / 3600) h = 0,417 mAh par cycle**
+
+Le système effectue également un réveil automatique toutes les heures afin de réaliser une capture périodique. Cela représente :
+
+**24 cycles par jour**
+
+soit une consommation journalière liée aux réveils périodiques de :
+
+**24 × 0,417 = 10,0 mAh/jour**
+
+À cela s'ajoute la consommation permanente du système en Deep Sleep :
+
+**0,276 mAh/jour**
+
+La consommation de base du système est donc d'environ :
+
+**10,0 + 0,276 = 10,28 mAh/jour**
+
+### Influence de la présence des oiseaux
+
+Les détections du capteur PIR provoquent également un réveil immédiat de la TimerCAM. Le nombre de détections quotidiennes influence donc directement l'autonomie.
+
+En prenant l'hypothèse de 0,417 mAh par détection :
+
+| Détections PIR/jour | Réveils totaux/jour | Consommation estimée/jour |
+| ------------------: | ------------------: | ------------------------: |
+|                   0 |                  24 |               ≈ 10,28 mAh |
+|                   1 |                  25 |               ≈ 10,69 mAh |
+|                   5 |                  29 |               ≈ 12,36 mAh |
+|                  10 |                  34 |               ≈ 14,45 mAh |
+|                  20 |                  44 |               ≈ 18,62 mAh |
+|                  50 |                  74 |               ≈ 31,11 mAh |
+
+*Cette valeur suppose que chaque détection est comptabilisée comme un cycle indépendant et que le système revient effectivement en Deep Sleep entre deux détections.
+
+### Exemple avec une batterie de 3000 mAh
+
+À titre d'exemple, avec une batterie de 3000 mAh :
+
+* Sans détection PIR : environ **292 jours**
+* 1 détection/jour : environ **281 jours**
+* 5 détections/jour : environ **243 jours**
+* 10 détections/jour : environ **208 jours**
+* 20 détections/jour : environ **161 jours**
+* 50 détections/jour : environ **96 jours**
+
+Ces valeurs sont des estimations théoriques. L'autonomie réelle sera inférieure en raison du rendement des régulateurs, des pertes liées à la batterie, des pointes de courant du Wi-Fi, du temps réel nécessaire à la connexion au réseau et des variations de consommation pendant la capture et la transmission.
+
+Cette analyse montre néanmoins que le choix d'un fonctionnement majoritairement en Deep Sleep est particulièrement important. Le BS612 ne consomme qu'une dizaine de microampères et peut donc rester actif en permanence pour surveiller le nichoir, tandis que la TimerCAM n'est alimentée activement que lorsqu'une photographie doit être réalisée.
+
+Le réveil périodique d'une fois par heure constitue un compromis entre surveillance régulière et autonomie. En présence d'un oiseau, le capteur PIR permet cependant une réaction immédiate sans devoir maintenir la caméra et le Wi-Fi actifs en permanence.
